@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-primary: #1a1b26;
+  --color-bg-secondary: #24283b;
+  --color-text-primary: #a9b1d6;
+  --color-text-secondary: #7dcfff;
+  --color-accent: #f99e1c;
+  --color-success: #9ece6a;
+  --color-warning: #e0af68;
+  --color-danger: #f7768e;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-text-primary;
+  }
+}
+
+@layer components {
+  .crypto-card {
+    @apply bg-bg-secondary border border-accent/20 rounded-lg shadow-lg;
+  }
+
+  .btn-primary {
+    @apply bg-accent text-bg-primary hover:bg-accent/80 transition-colors duration-300;
+  }
+
+  .btn-secondary {
+    @apply bg-bg-secondary text-text-secondary border border-accent/50 hover:bg-accent/20 transition-colors duration-300;
+  }
+
+  .input-primary {
+    @apply bg-bg-secondary border border-accent/50 text-text-primary placeholder-text-primary/50 focus:ring-accent focus:border-accent;
+  }
+}
+
+/* .crypto-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='%237aa2f7' fill-opacity='0.05'%3E%3Cpath d='M0 0h80v80H0V0zm20 20v40h40V20H20zm20 35a15 15 0 1 1 0-30 15 15 0 0 1 0 30z' opacity='.5'/%3E%3Cpath d='M15 15h50l-5 5H20v40l-5 5V15zm0 50h50V15L80 0v80H0l15-15zm32.07-32.07l3.54-3.54A15 15 0 0 1 29.93 50.07l-3.54 3.54a20 20 0 0 0 20.68-20.68zm-5.66 5.66a10 10 0 0 1-14.14 0 10 10 0 0 1 0-14.14 10 10 0 0 1 14.14 0 10 10 0 0 1 0 14.14z'/%3E%3C/g%3E%3C/svg%3E");
+} */

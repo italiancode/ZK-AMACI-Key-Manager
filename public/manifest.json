@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "MACI Key Manager",
+  "version": "1.0",
+  "description": "A browser extension to securely manage and sign A-MACI keypairs.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}

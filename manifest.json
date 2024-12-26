@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "ZK-AMACI Key Manager",
+  "short_name": "ZK-AMACI Keys",
+  "version": "0.1.0",
+  "description": "Secure and intuitive key management for Zero-Knowledge AMACI. Features include ZK-proof support, encrypted storage, and seamless dApp integration for privacy-focused blockchain governance.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "author": "Agbaka Daniel Ugonna",
+  "homepage_url": "https://github.com/italiancode/zk-amaci-key-manager",
+  "categories": [
+    "Security & Privacy",
+    "Cryptocurrency",
+    "Productivity",
+    "Developer Tools"
+  ],
+  "permissions": ["contextMenus", "windows", "tabs"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
+    "sandbox": "sandbox allow-scripts allow-forms allow-popups allow-modals; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self'"
+  },
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.ts"
+  },
+  "externally_connectable": {
+    "matches": ["<all_urls>"]
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["index.html", "assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

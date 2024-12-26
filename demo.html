@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MACI Key Manager Demo</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .status {
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+      }
+      .status.success {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .status.error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .action-panel {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      input {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 300px;
+      }
+      pre {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>ZK-AMACI Key Manager Demo</h1>
+
+      <div id="extensionStatus" class="status">
+        Checking extension status...
+      </div>
+
+      <div class="action-panel">
+        <h2>Generate Keypair</h2>
+        <button onclick="generateKeypair()">Generate New Keypair</button>
+        <pre id="keypairResult">No keypair generated yet</pre>
+      </div>
+
+      <div class="action-panel">
+        <h2>Sign Message</h2>
+        <div>
+          <input type="text" id="publicKey" placeholder="Public Key" />
+        </div>
+        <div>
+          <input type="text" id="message" placeholder="Message to sign" />
+        </div>
+        
+        <!-- Metadata Inputs -->
+        <div class="metadata-section">
+          <h3>Metadata</h3>
+          <div>
+            <input type="text" id="proposalId" placeholder="Proposal ID" />
+            <input type="text" id="proposalTitle" placeholder="Proposal Title" />
+          </div>
+          <div>
+            <select id="voteType" onchange="updateVoteChoiceInput()">
+              <option value="vote">Vote</option>
+              <option value="delegate">Delegate</option>
+            </select>
+            <div id="voteChoiceContainer">
+              <!-- Dynamic input will be inserted here -->
+            </div>
+          </div>
+          <div>
+            <input type="number" id="round" placeholder="Round" />
+            <input type="number" id="epoch" placeholder="Epoch" />
+          </div>
+        </div>
+
+        <button onclick="signMessage()">Sign Message</button>
+        <pre id="signatureResult">No signature generated yet</pre>
+      </div>
+    </div>
+
+    <script type="module">
+      import { MACIKeyManagerClient } from '/public/sdk/MACIKeyManagerClient.js';
+      window.MACIKeyManagerClient = MACIKeyManagerClient;
+    </script>
+
+    <script>
+      // Example usage in your demo page:
+      async function init() {
+        try {
+          // Test if extension is available
+          const response = await new Promise((resolve) => {
+            chrome.runtime.sendMessage(
+              MACIKeyManagerClient.EXTENSION_ID,
+              { type: "PING" },
+              (response) => {
+                resolve(response);
+              }
+            );
+          });
+
+          if (response?.type === "PONG") {
+            console.log("Extension is available!");
+            document.getElementById("extensionStatus").textContent =
+              "✅ ZK-AMACI Key Manager Extension is installed and ready";
+          }
+        } catch (error) {
+          console.error("Extension not available:", error);
+          document.getElementById("extensionStatus").textContent =
+            "❌ ZK-AMACI Key Manager Extension is not installed";
+        }
+      }
+
+      // Call init when page loads
+      window.onload = init;
+
+      // Generate keypair function
+      async function generateKeypair() {
+        const resultDiv = document.getElementById("keypairResult");
+        try {
+          const result = await MACIKeyManagerClient.generateKeypair();
+          resultDiv.textContent = JSON.stringify(result, null, 2);
+
+          // Auto-fill the public key input if generation was successful
+          if (result.success && result.data.publicKey) {
+            document.getElementById("publicKey").value = result.data.publicKey;
+          }
+        } catch (error) {
+          resultDiv.textContent = `Error: ${error.message}`;
+        }
+      }
+
+      // Sign message function
+      async function signMessage() {
+        const resultDiv = document.getElementById("signatureResult");
+        const publicKey = document.getElementById("publicKey").value;
+        const message = document.getElementById("message").value;
+        
+        // Get metadata values
+        const metadata = {
+          proposalInfo: {
+            id: document.getElementById("proposalId").value,
+            title: document.getElementById("proposalTitle").value,
+          },
+          userAction: {
+            type: document.getElementById("voteType").value,
+            choice: document.getElementById("voteChoice").value,
+          },
+          context: {
+            round: parseInt(document.getElementById("round").value),
+            epoch: parseInt(document.getElementById("epoch").value),
+            timestamp: Date.now()
+          }
+        };
+
+        try {
+          const result = await MACIKeyManagerClient.signMessage(publicKey, message, metadata);
+          resultDiv.textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+          resultDiv.textContent = `Error: ${error.message}`;
+        }
+      }
+
+      function updateVoteChoiceInput() {
+        const voteType = document.getElementById('voteType').value;
+        const container = document.getElementById('voteChoiceContainer');
+        
+        if (voteType === 'vote') {
+          container.innerHTML = `
+            <select id="voteChoice">
+              <option value="">Select your vote</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+              <option value="abstain">Abstain</option>
+            </select>
+          `;
+        } else {
+          container.innerHTML = `
+            <input type="text" 
+                   id="voteChoice" 
+                   placeholder="Enter delegatee address" 
+                   pattern="^0x[a-fA-F0-9]{40}$"
+                   title="Please enter a valid Ethereum address starting with 0x"
+            />
+          `;
+        }
+      }
+
+      // Initialize the input on page load
+      document.addEventListener('DOMContentLoaded', updateVoteChoiceInput);
+    </script>
+  </body>
+</html>
