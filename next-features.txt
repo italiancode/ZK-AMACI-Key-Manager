@@ -1,0 +1,14 @@
+/// Privacy & Security
+- Activity logging
+
+/// Message Signing
+- Transaction preview
+- QR code support
+- Dapp integration
+
+
+/// Backup & Recovery
+Encrypted key export
+Secure backup files
+Recovery options
+Password protection

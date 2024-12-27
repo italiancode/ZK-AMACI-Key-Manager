@@ -173,7 +173,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="bg-bg-primary">
-      <div className="max-w-3xl mx-auto space-y-6 py-6 px-3">
+      <div className="max-w-3xl mx-auto space-y-6 pb-6">
         <header className="bg-bg-secondary shadow-md py-4 px-6 mb-8">
           <div className="max-w-3xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -244,7 +244,7 @@ const Dashboard: React.FC = () => {
           <>
             <button
               onClick={handleGenerateKeypair}
-              className="w-full py-3 px-4 rounded bg-accent text-bg-primary font-medium hover:bg-accent/90 transition-colors flex items-center justify-center shadow-md"
+              className="w-full py-3 px-4 rounded bg-accent text-bg-primary font-medium hover:bg-accent/90 transition-colors flex items-center justify-center shadow-md max-w-fit"
             >
               <FiKey className="mr-2 h-5 w-5" />
               Generate New Keypair

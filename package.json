@@ -43,7 +43,7 @@
   },
   "description": "A secure browser extension for managing Zero-Knowledge AMACI (Anonymous Minimal Anti-Collusion Infrastructure) keypairs with advanced privacy features",
   "main": "eslint.config.js",
-  "author": "Agbaka Daniel Ugonna",
+  "author": "Agbaka Daniel Ugonna (Big Dreams Web3, https://x.com/0xbigdream)",
   "license": "MIT",
   "keywords": [
     "zk-amaci",
