@@ -4,6 +4,8 @@ import {
   decode as decodeBase64,
 } from "base64-arraybuffer";
 
+import PasswordManager from './passwordManager';
+
 interface KeyPair {
   publicKey: string;
   privateKey: string;
@@ -18,7 +20,7 @@ interface SigningMetadata {
     [key: string]: any;
   };
   userAction?: {
-    type: 'vote' | 'delegate';
+    type: "vote" | "delegate";
     choice?: string | number;
     delegatee?: string;
     [key: string]: any;
@@ -39,13 +41,30 @@ interface SignatureResponse {
 }
 
 class AMACIKeyManager {
-  private encryptionPassword: string | null = null;
   private keyStorageName = "amaci-keys";
-  private passwordStorageName = "amaci-password";
+  private passwordManager: PasswordManager;
 
   constructor() {
-    if (!indexedDB) {
-      throw new Error("IndexedDB is required for secure key storage.");
+    this.passwordManager = new PasswordManager();
+  }
+
+  async setPassword(password: string): Promise<void> {
+    await this.passwordManager.setPassword(password);
+  }
+
+  async getPassword(): Promise<string | null> {
+    return this.passwordManager.getPassword();
+  }
+
+  // Initialize password from Firebase
+  async initializePassword(password?: string): Promise<void> {
+    if (password) {
+      await this.setPassword(password);
+    } else {
+      const storedPassword = await this.getPassword();
+      if (storedPassword) {
+        await this.passwordManager.setPassword(storedPassword);
+      }
     }
   }
 
@@ -58,9 +77,6 @@ class AMACIKeyManager {
         const db = request.result;
         if (!db.objectStoreNames.contains(this.keyStorageName)) {
           db.createObjectStore(this.keyStorageName, { keyPath: "publicKey" });
-        }
-        if (!db.objectStoreNames.contains(this.passwordStorageName)) {
-          db.createObjectStore(this.passwordStorageName, { keyPath: "id" });
         }
       };
 
@@ -110,83 +126,17 @@ class AMACIKeyManager {
 
     return await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
   }
-  // Sets the password in the password storage
-  async setPassword(password: string): Promise<void> {
-    const encryptedPassword = await this.encryptData(
-      new TextEncoder().encode(password),
-      password
-    );
-
-    const db = await this.openDatabase();
-    const tx = db.transaction(this.passwordStorageName, "readwrite");
-    const store = tx.objectStore(this.passwordStorageName);
-
-    await new Promise((resolve, reject) => {
-      const request = store.put({
-        id: "user-password",
-        password: encryptedPassword,
-      });
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  // Retrieves the password from the password storage
-  async getPassword(): Promise<string | null> {
-    const db = await this.openDatabase();
-    const tx = db.transaction(this.passwordStorageName, "readonly");
-    const store = tx.objectStore(this.passwordStorageName);
-
-    return new Promise((resolve, reject) => {
-      const request = store.get("user-password");
-      request.onsuccess = () => {
-        resolve(request.result?.password || null);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  // Deletes the password from the password storage
-  async deletePassword(): Promise<void> {
-    const db = await this.openDatabase();
-    const tx = db.transaction(this.passwordStorageName, "readwrite");
-    const store = tx.objectStore(this.passwordStorageName);
-
-    await new Promise<void>((resolve, reject) => {
-      const request = store.delete("user-password");
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async initializePassword(password: string): Promise<void> {
-    const existingPassword = await this.getPassword();
-    if (existingPassword) {
-      console.log("Password already set. Using existing password.");
-      this.encryptionPassword = existingPassword;
-    } else {
-      if (password) {
-        await this.setPassword(password);
-        this.encryptionPassword = password; // Store the password in memory
-        console.log("Password set successfully.");
-      } else {
-        console.log("No password provided to set.");
-      }
-    }
-  }
 
   async generateKeyPair(): Promise<KeyPair> {
-    if (!this.encryptionPassword) {
-      this.encryptionPassword = await this.getPassword();
-      if (!this.encryptionPassword) {
-        throw new Error("Password not set. Please set a password first.");
-      }
+    const password = this.passwordManager.getCurrentPassword() || await this.getPassword();
+    if (!password) {
+      throw new Error("Password not set. Please set a password first.");
     }
 
     const keyPair = nacl.sign.keyPair();
     const encryptedPrivateKey = await this.encryptData(
       keyPair.secretKey,
-      this.encryptionPassword
+      password
     );
 
     const newKeyPair: KeyPair = {
@@ -261,16 +211,14 @@ class AMACIKeyManager {
     const activeKeyPair = keyPairs.find((key) => key.status === "active");
 
     if (activeKeyPair) {
-      if (!this.encryptionPassword) {
-        this.encryptionPassword = await this.getPassword();
-        if (!this.encryptionPassword) {
-          throw new Error("Encryption password is not set.");
-        }
+      const password = this.passwordManager.getCurrentPassword() || await this.getPassword();
+      if (!password) {
+        throw new Error("Encryption password is not set.");
       }
 
       const decryptedPrivateKey = await this.decryptData(
         activeKeyPair.privateKey,
-        this.encryptionPassword
+        password
       );
       console.log(
         "Recovered Key Pair:",
@@ -294,11 +242,9 @@ class AMACIKeyManager {
       throw new Error("Key pair not found or discarded.");
     }
 
-    if (!this.encryptionPassword) {
-      this.encryptionPassword = await this.getPassword();
-      if (!this.encryptionPassword) {
-        throw new Error("Encryption password is not set.");
-      }
+    const password = this.passwordManager.getCurrentPassword() || await this.getPassword();
+    if (!password) {
+      throw new Error("Encryption password is not set.");
     }
 
     // Add timestamp if not provided
@@ -316,11 +262,13 @@ class AMACIKeyManager {
 
     const decryptedPrivateKey = await this.decryptData(
       key.privateKey,
-      this.encryptionPassword
+      password
     );
 
     const privateKey = new Uint8Array(decryptedPrivateKey);
-    const messageBuffer = new TextEncoder().encode(JSON.stringify(messageWithMetadata));
+    const messageBuffer = new TextEncoder().encode(
+      JSON.stringify(messageWithMetadata)
+    );
     const signature = nacl.sign.detached(messageBuffer, privateKey);
 
     const signatureHex = Array.from(signature)
@@ -332,7 +280,7 @@ class AMACIKeyManager {
     return {
       signature: encodeBase64(signature),
       signatureHash,
-      metadata
+      metadata,
     };
   }
 

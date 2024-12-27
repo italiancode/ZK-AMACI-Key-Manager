@@ -3,64 +3,95 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MACI Key Manager Demo</title>
+    <title>ZK-AMACI Key Manager Demo</title>
     <style>
       body {
-        font-family: "Arial", sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
+        font-family: 'Roboto', 'Arial', sans-serif;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #e0e0e0;
+        margin: 0;
         padding: 20px;
-        background-color: #f5f5f5;
+        min-height: 100vh;
       }
       .container {
-        background-color: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 30px;
+      }
+      h1, h2, h3 {
+        color: #00ffff;
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
       }
       .status {
-        padding: 10px;
+        padding: 15px;
         margin-bottom: 20px;
-        border-radius: 4px;
+        border-radius: 8px;
+        font-weight: bold;
       }
       .status.success {
-        background-color: #d4edda;
-        color: #155724;
+        background-color: rgba(0, 255, 0, 0.2);
+        color: #00ff00;
       }
       .status.error {
-        background-color: #f8d7da;
-        color: #721c24;
+        background-color: rgba(255, 0, 0, 0.2);
+        color: #ff4444;
       }
       .action-panel {
-        margin-bottom: 20px;
-        padding: 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
       }
       button {
-        background-color: #007bff;
-        color: white;
+        background: linear-gradient(45deg, #00ffff, #00ccff);
+        color: #1a1a2e;
         border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
+        padding: 12px 24px;
+        border-radius: 25px;
         cursor: pointer;
         margin: 5px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
       }
       button:hover {
-        background-color: #0056b3;
+        background: linear-gradient(45deg, #00ccff, #00ffff);
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
       }
-      input {
-        padding: 8px;
-        margin: 5px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        width: 300px;
+      input, select {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #e0e0e0;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 25px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      input:focus, select:focus {
+        outline: none;
+        border-color: #00ffff;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
       }
       pre {
-        background-color: #f8f9fa;
+        background-color: rgba(0, 0, 0, 0.3);
         padding: 15px;
-        border-radius: 4px;
+        border-radius: 8px;
         overflow-x: auto;
+        color: #00ffff;
+        border: 1px solid rgba(0, 255, 255, 0.3);
+      }
+      .metadata-section {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
       }
     </style>
   </head>
@@ -87,7 +118,6 @@
           <input type="text" id="message" placeholder="Message to sign" />
         </div>
         
-        <!-- Metadata Inputs -->
         <div class="metadata-section">
           <h3>Metadata</h3>
           <div>
@@ -120,43 +150,56 @@
     </script>
 
     <script>
-      // Example usage in your demo page:
       async function init() {
         try {
-          // Test if extension is available
+          if (typeof chrome === 'undefined' || !chrome.runtime) {
+            throw new Error('Chrome extension API not available');
+          }
+
           const response = await new Promise((resolve) => {
-            chrome.runtime.sendMessage(
-              MACIKeyManagerClient.EXTENSION_ID,
-              { type: "PING" },
-              (response) => {
-                resolve(response);
-              }
-            );
+            try {
+              chrome.runtime.sendMessage(
+                MACIKeyManagerClient.EXTENSION_ID,
+                { type: "PING" },
+                (response) => {
+                  if (chrome.runtime.lastError) {
+                    resolve({ error: chrome.runtime.lastError });
+                  } else {
+                    resolve(response);
+                  }
+                }
+              );
+            } catch (err) {
+              resolve({ error: err });
+            }
           });
+
+          if (response?.error) {
+            throw new Error('Extension not installed or unavailable');
+          }
 
           if (response?.type === "PONG") {
             console.log("Extension is available!");
             document.getElementById("extensionStatus").textContent =
               "✅ ZK-AMACI Key Manager Extension is installed and ready";
+            document.getElementById("extensionStatus").classList.add("success");
           }
         } catch (error) {
-          console.error("Extension not available:", error);
+          console.log("Extension status:", error.message);
           document.getElementById("extensionStatus").textContent =
             "❌ ZK-AMACI Key Manager Extension is not installed";
+          document.getElementById("extensionStatus").classList.add("error");
         }
       }
 
-      // Call init when page loads
       window.onload = init;
 
-      // Generate keypair function
       async function generateKeypair() {
         const resultDiv = document.getElementById("keypairResult");
         try {
           const result = await MACIKeyManagerClient.generateKeypair();
           resultDiv.textContent = JSON.stringify(result, null, 2);
 
-          // Auto-fill the public key input if generation was successful
           if (result.success && result.data.publicKey) {
             document.getElementById("publicKey").value = result.data.publicKey;
           }
@@ -165,13 +208,11 @@
         }
       }
 
-      // Sign message function
       async function signMessage() {
         const resultDiv = document.getElementById("signatureResult");
         const publicKey = document.getElementById("publicKey").value;
         const message = document.getElementById("message").value;
         
-        // Get metadata values
         const metadata = {
           proposalInfo: {
             id: document.getElementById("proposalId").value,
@@ -221,7 +262,6 @@
         }
       }
 
-      // Initialize the input on page load
       document.addEventListener('DOMContentLoaded', updateVoteChoiceInput);
     </script>
   </body>

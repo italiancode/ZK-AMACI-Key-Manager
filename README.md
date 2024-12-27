@@ -10,6 +10,30 @@ A secure browser extension for managing and signing Zero-Knowledge AMACI (Anonym
 - 🌐 dApp integration support
 - 🎨 Modern UI with Tailwind CSS
 - 📱 Responsive design
+- 👤 User authentication with Google/GitHub
+- 🔑 Encrypted password storage
+- 🛡️ Firebase security rules for data protection
+
+## Security Features
+
+### Authentication
+- Secure user authentication via Google and GitHub
+- Session management with Firebase Auth
+- Protected routes and components
+
+### Password Security
+- Encrypted password storage in Firebase
+- User-specific data isolation
+- Secure password recovery mechanism
+- Client-side password encryption
+- No plaintext password storage
+
+### Key Management
+- Private key visibility toggle
+- Secure key deletion
+- Key status tracking (active/discarded)
+- Copy protection for sensitive data
+- Warning messages for private key exposure
 
 ## Project Structure
 ```
@@ -20,10 +44,38 @@ zk-azk-amaci-key-manager/
 │   └── manifest.json    # Extension manifest
 ├── src/
 │   ├── assets/         # Static assets
+│   ├── components/     # React components
+│   │   ├── Dashboard.tsx    # Main dashboard
+│   │   ├── Header.tsx      # Navigation header
+│   │   ├── Login.tsx       # Authentication
+│   │   └── SetPassword.tsx # Password management
+│   ├── contexts/       # React contexts
+│   │   └── AuthContext.tsx # Authentication context
 │   ├── services/       # Core services
+│   │   └── keyManager.ts   # Key management logic
+│   ├── config/         # Configuration
+│   │   └── firebase.ts     # Firebase setup
 │   ├── styles/         # CSS styles
 │   └── sdk/            # TypeScript SDK
 └── demo.html           # Demo page for testing
+```
+
+## Firebase Security Rules
+
+```javascript
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      match /passwords/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
 ```
 
 ## Prerequisites
