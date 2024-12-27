@@ -244,7 +244,7 @@ const Dashboard: React.FC = () => {
           <>
             <button
               onClick={handleGenerateKeypair}
-              className="w-full py-3 px-4 rounded bg-accent text-bg-primary font-medium hover:bg-accent/90 transition-colors flex items-center justify-center shadow-md max-w-fit"
+              className="w-full py-3 px-4 rounded bg-accent text-bg-primary font-medium hover:bg-accent/90 transition-colors flex items-center justify-center shadow-md max-w-fit ml-3"
             >
               <FiKey className="mr-2 h-5 w-5" />
               Generate New Keypair
