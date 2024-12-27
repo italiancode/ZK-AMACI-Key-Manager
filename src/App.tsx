@@ -6,7 +6,7 @@ import Dashboard from "./components/Dashboard";
 function App() {
   return (
     <div className="app-container mx-auto bg-gray-100 w-[400px] h-[600px]">
-      <main className="">
+      <main className="h-full">
         <Dashboard />
       </main>
     </div>

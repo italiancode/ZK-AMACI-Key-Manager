@@ -172,7 +172,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="bg-bg-primary">
+    <div className="h-full bg-bg-primary">
       <div className="max-w-3xl mx-auto space-y-6 pb-6">
         <header className="bg-bg-secondary shadow-md py-4 px-6 mb-8">
           <div className="max-w-3xl mx-auto flex items-center justify-between">
