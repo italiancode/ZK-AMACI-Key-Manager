@@ -12,12 +12,7 @@
   },
   "author": "Agbaka Daniel Ugonna",
   "homepage_url": "https://github.com/italiancode/zk-amaci-key-manager",
-  "categories": [
-    "Security & Privacy",
-    "Cryptocurrency",
-    "Productivity",
-    "Developer Tools"
-  ],
+
   "permissions": [
     "contextMenus",
     "windows",
@@ -55,7 +50,8 @@
     }
   },
   "background": {
-    "service_worker": "src/background.ts"
+    "service_worker": "src/background.js",
+    "type": "module"
   },
   "externally_connectable": {
     "matches": ["<all_urls>"]
