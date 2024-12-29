@@ -59,25 +59,6 @@ zk-azk-amaci-key-manager/
 │   └── sdk/            # TypeScript SDK
 └── demo.html           # Demo page for testing
 ```
-
-## Firebase Security Rules
-
-```javascript
-rules_version = '2';
-
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      match /passwords/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-    }
-  }
-}
-```
-
 ## Prerequisites
 
 - Node.js >= 14.18.0
