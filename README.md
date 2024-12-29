@@ -182,7 +182,7 @@ npm run build
 
 ## License
 
-[Add your license here]
+[MIT](https://github.com/italiancode/zk-amaci-key-manager/blob/main/LICENSE)
 
 ## Support
 
