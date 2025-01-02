@@ -268,7 +268,7 @@ const Dashboard: React.FC = () => {
               />
             ) : (
               <>
-                <div className="flex border-b border-text-secondary/10">
+                <div className="flex border-b border-text-secondary/10 space-x-2 mb-6">
                   <button
                     className={`px-4 py-2 ${
                       activeTab === "keypairs"
@@ -295,7 +295,7 @@ const Dashboard: React.FC = () => {
                   <>
                     <button
                       onClick={handleGenerateKeypair}
-                      className="w-full py-3 px-4 rounded bg-accent text-bg-primary font-medium hover:bg-accent/90 transition-colors flex items-center justify-center shadow-md max-w-fit ml-3"
+                      className="w-full py-3 px-4 rounded bg-accent text-bg-primary font-medium hover:bg-accent/90 transition-colors flex items-center justify-center shadow-md max-w-fit"
                     >
                       <FiKey className="mr-2 h-5 w-5" />
                       Generate New Keypair
@@ -325,20 +325,28 @@ const Dashboard: React.FC = () => {
                       </section>
                     )}
 
-                    {allKeyPairs.map((key, index) => (
-                      <KeyPair
-                        key={index}
-                        publicKey={key.publicKey}
-                        privateKey={key.privateKey}
-                        status={key.status}
-                        showPrivateKey={showPrivateKeys[key.publicKey] || false}
-                        copiedKey={copiedKey}
-                        onTogglePrivateKey={togglePrivateKeyVisibility}
-                        onCopyToClipboard={copyToClipboard}
-                        onDiscard={handleDiscardKeyPair}
-                        onDelete={handleDeleteKeyPair}
-                      />
-                    ))}
+                    <section className="bg-bg-secondary rounded-lg p-6 shadow-lg">
+                      <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent pb-2">
+                        All Keypairs
+                      </h2>
+
+                      {allKeyPairs.map((key, index) => (
+                        <KeyPair
+                          key={index}
+                          publicKey={key.publicKey}
+                          privateKey={key.privateKey}
+                          status={key.status}
+                          showPrivateKey={
+                            showPrivateKeys[key.publicKey] || false
+                          }
+                          copiedKey={copiedKey}
+                          onTogglePrivateKey={togglePrivateKeyVisibility}
+                          onCopyToClipboard={copyToClipboard}
+                          onDiscard={handleDiscardKeyPair}
+                          onDelete={handleDeleteKeyPair}
+                        />
+                      ))}
+                    </section>
                   </>
                 ) : (
                   <SignMessage

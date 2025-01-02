@@ -27,6 +27,7 @@ const KeyPair: React.FC<KeyPairProps> = ({
   isNewlyGenerated,
 }) => {
   return (
+    
     <div
       className={`${
         isNewlyGenerated
