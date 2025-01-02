@@ -14,176 +14,113 @@ A secure browser extension for managing and signing Zero-Knowledge AMACI (Anonym
 - 🔑 Encrypted password storage
 - 🛡️ Firebase security rules for data protection
 
-## Security Features
-
-### Authentication
-- Secure user authentication via Google and GitHub
-- Session management with Firebase Auth
-- Protected routes and components
-
-### Password Security
-- Encrypted password storage in Firebase
-- User-specific data isolation
-- Secure password recovery mechanism
-- Client-side password encryption
-- No plaintext password storage
-
-### Key Management
-- Private key visibility toggle
-- Secure key deletion
-- Key status tracking (active/discarded)
-- Copy protection for sensitive data
-- Warning messages for private key exposure
-
 ## Project Structure
 ```
 zk-azk-amaci-key-manager/
-├── dist/                 # Build output directory
-├── public/              
-│   ├── sdk/             # Client SDK for dApp integration
-│   └── manifest.json    # Extension manifest
 ├── src/
-│   ├── assets/         # Static assets
-│   ├── components/     # React components
-│   │   ├── Dashboard.tsx    # Main dashboard
+│   ├── components/
+│   │   ├── Dashboard.tsx    # Main dashboard container
+│   │   ├── KeyPairs.tsx    # Keypair management UI
+│   │   ├── SignMessage.tsx # Message signing UI
 │   │   ├── Header.tsx      # Navigation header
 │   │   ├── Login.tsx       # Authentication
 │   │   └── SetPassword.tsx # Password management
-│   ├── contexts/       # React contexts
+│   ├── contexts/
 │   │   └── AuthContext.tsx # Authentication context
-│   ├── services/       # Core services
-│   │   └── keyManager.ts   # Key management logic
-│   ├── config/         # Configuration
-│   │   └── firebase.ts     # Firebase setup
-│   ├── styles/         # CSS styles
-│   └── sdk/            # TypeScript SDK
-└── demo.html           # Demo page for testing
+│   ├── services/
+│   │   ├── keyManager.ts   # Key management logic
+│   │   └── passwordManager.ts # Password encryption
+│   └── config/
+│       └── firebase.ts     # Firebase setup
 ```
-## Prerequisites
 
-- Node.js >= 14.18.0
-- npm >= 8.0.0
-- Chrome browser
+## Firebase Security Rules
 
-## Installation
+Add these rules to your Firebase project:
 
-1. Clone the repository:
+```javascript
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow users to read/write their own documents
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+## Components
+
+### KeyPairs
+Manages the display and interaction with keypairs:
+- Generate new keypairs
+- View public/private keys
+- Copy keys to clipboard
+- Discard/delete keypairs
+
+### SignMessage
+Handles message signing functionality:
+- Select active keypair
+- Input message and metadata
+- Sign messages
+- View signature results
+
+### Dashboard
+Main container component that:
+- Manages authentication state
+- Handles password management
+- Coordinates between KeyPairs and SignMessage
+- Manages pending requests
+
+## Installation & Setup
+
+1. Clone and install dependencies:
 ```bash
 git clone https://github.com/italiancode/zk-amaci-key-manager.git
 cd zk-amaci-key-manager
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
+
+2. Configure Firebase:
+- Create a Firebase project
+- Enable Authentication (Google & GitHub)
+- Set up Firestore database
+- Add security rules
+- Update `src/config/firebase.ts` with your credentials
 
 3. Build the extension:
 ```bash
 npm run build
 ```
 
-## Loading the Extension in Chrome
-
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" in the top right
-3. Click "Load unpacked" and select the `dist` folder from the project
+4. Load in Chrome:
+- Go to `chrome://extensions/`
+- Enable Developer mode
+- Click "Load unpacked"
+- Select the `dist` folder
 
 ## Development
 
-Start the development server with hot reload:
 ```bash
 npm run dev
 ```
 
-Lint the code:
+## Testing
+
 ```bash
-npm run lint
+npm test
 ```
 
-## Testing with demo.html
+## Security Considerations
 
-The `demo.html` file provides a testing interface for the extension:
-
-1. Start a local server (e.g., using `npx http-server`)
-2. Open `demo.html` in your browser
-3. Test the following features:
-   - Extension detection
-   - Keypair generation
-   - Message signing with metadata
-   - Vote and delegate actions
-
-### Example Metadata Structure
-```javascript
-{
-  proposalInfo: {
-    id: "proposal-123",
-    title: "Community Fund Allocation"
-  },
-  userAction: {
-    type: "vote",  // or "delegate"
-    choice: "yes"  // or delegatee address for delegation
-  },
-  context: {
-    round: 1,
-    epoch: 2,
-    timestamp: Date.now()
-  }
-}
-```
-
-## dApp Integration
-
-### 1. Include the Client SDK
-```html
-<script type="module">
-  import { MACIKeyManagerClient } from '/public/sdk/MACIKeyManagerClient.js';
-  window.MACIKeyManagerClient = MACIKeyManagerClient;
-</script>
-```
-
-### 2. Basic Usage
-```javascript
-// Generate a keypair
-const keypair = await MACIKeyManagerClient.generateKeypair();
-
-// Sign a message
-const signature = await MACIKeyManagerClient.signMessage(
-  publicKey,
-  message,
-  metadata
-);
-```
-
-## Building for Production
-
-1. Update the extension version in `manifest.json`
-2. Build the production version:
-```bash
-npm run build
-```
-3. The extension will be built to the `dist` directory
-
-## Security Features
-
-- Secure key storage using Chrome's extension storage
-- Isolated execution environment
-- Request origin validation
-- Metadata verification
-- User approval for all sensitive operations
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+- All private keys are encrypted before storage
+- Passwords are never stored in plaintext
+- Firebase rules enforce user isolation
+- Client-side encryption for sensitive data
+- Secure key deletion process
 
 ## License
 
-[MIT](https://github.com/italiancode/zk-amaci-key-manager/blob/main/LICENSE)
-
-## Support
-
-For issues and feature requests, please [open an issue](https://github.com/italiancode/zk-amaci-key-manager/issues).
+[MIT](LICENSE)

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import AMACIKeyManager from "../services/keyManager";
-import { FiKey, FiTrash2, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiKey } from "react-icons/fi";
 
 import { ApprovalRequest } from "./ApprovalRequest";
 import SetPassword from "./SetPassword";
-import { useAuth } from '../contexts/AuthContext';
-import Login from './Login';
-import Header from './Header';
-import Loading from './Loading';
+import { useAuth } from "../contexts/AuthContext";
+import Login from "./Login";
+import Header from "./Header";
+import Loading from "./Loading";
+import KeyPair from "./KeyPair";
+import SignMessage from "./SignMessage";
 
 interface PendingRequest {
   id: string;
@@ -40,8 +42,10 @@ const Dashboard: React.FC = () => {
   }>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { currentUser, storeEncryptedPassword, getEncryptedPassword } = useAuth();
+  const { currentUser, storeEncryptedPassword, getEncryptedPassword } =
+    useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"keypairs" | "sign">("keypairs");
 
   useEffect(() => {
     if (!currentUser) {
@@ -51,15 +55,15 @@ const Dashboard: React.FC = () => {
       setIsLoading(false);
       return;
     }
-    
+
     const initializeKeyManager = async () => {
       try {
         const manager = new AMACIKeyManager();
         setKeyManager(manager);
-        
+
         const existingPassword = await manager.getPassword();
         setIsPasswordSet(!!existingPassword);
-        
+
         await fetchKeyPairs();
       } catch (error) {
         console.error("Error initializing:", error);
@@ -214,6 +218,15 @@ const Dashboard: React.FC = () => {
     recoverPassword();
   }, [currentUser, keyManager]);
 
+  const handleSignMessage = async (
+    publicKey: string,
+    message: string,
+    metadata: any
+  ) => {
+    if (!keyManager) throw new Error("Key manager not initialized");
+    return await keyManager.signMessage(publicKey, message, metadata);
+  };
+
   if (isLoading) {
     return <Loading />;
   }
@@ -225,7 +238,7 @@ const Dashboard: React.FC = () => {
   return (
     <div>
       <Header />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:py-6 lg:px-8 py-8">
         <div className="h-full bg-bg-primary">
           <div className="max-w-3xl mx-auto space-y-6 pb-6">
             {pendingRequests.length > 0 && (
@@ -255,211 +268,84 @@ const Dashboard: React.FC = () => {
               />
             ) : (
               <>
-                <button
-                  onClick={handleGenerateKeypair}
-                  className="w-full py-3 px-4 rounded bg-accent text-bg-primary font-medium hover:bg-accent/90 transition-colors flex items-center justify-center shadow-md max-w-fit ml-3"
-                >
-                  <FiKey className="mr-2 h-5 w-5" />
-                  Generate New Keypair
-                </button>
-                {error && (
-                  <div className="mt-4 p-3 bg-danger/10 border border-danger rounded text-danger text-sm">
-                    {error}
-                  </div>
-                )}
-                {keyPair && (
-                  <section className="bg-bg-secondary rounded-lg p-6 shadow-lg">
-                    <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent pb-2">
-                      Generated Keypair
-                    </h2>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">
-                          Public Key
-                        </label>
-                        <div className="flex items-center bg-bg-primary rounded p-2">
-                          <code className="text-xs text-text-primary flex-1 font-mono truncate">
-                            {keyPair.publicKey}
-                          </code>
-                          <button
-                            onClick={() =>
-                              copyToClipboard(keyPair.publicKey, "public")
-                            }
-                            className="ml-2 p-2 rounded hover:bg-accent/10 text-accent"
-                          >
-                            {copiedKey === `public-${keyPair.publicKey}`
-                              ? "Copied!"
-                              : "Copy"}
-                          </button>
-                        </div>
-                      </div>
+                <div className="flex border-b border-text-secondary/10">
+                  <button
+                    className={`px-4 py-2 ${
+                      activeTab === "keypairs"
+                        ? "bg-accent text-bg-primary font-semibold"
+                        : "text-text-secondary hover:bg-bg-secondary"
+                    }`}
+                    onClick={() => setActiveTab("keypairs")}
+                  >
+                    Key Pairs
+                  </button>
+                  <button
+                    className={`px-4 py-2 ${
+                      activeTab === "sign"
+                        ? "bg-accent text-bg-primary font-semibold"
+                        : "text-text-secondary hover:bg-bg-secondary"
+                    }`}
+                    onClick={() => setActiveTab("sign")}
+                  >
+                    Sign Message
+                  </button>
+                </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">
-                          Private Key
-                        </label>
-                        <div className="space-y-2">
-                          <div className="flex items-center bg-bg-primary rounded p-2">
-                            <code
-                              className={`text-xs flex-1 font-mono truncate ${
-                                showPrivateKeys[keyPair.publicKey]
-                                  ? "text-danger"
-                                  : "text-text-primary"
-                              }`}
-                            >
-                              {showPrivateKeys[keyPair.publicKey]
-                                ? keyPair.privateKey
-                                : "••••••••••••••••"}
-                            </code>
-                            <button
-                              onClick={() =>
-                                togglePrivateKeyVisibility(keyPair.publicKey)
-                              }
-                              className="ml-2 p-2 rounded hover:bg-accent/10 text-accent"
-                            >
-                              {showPrivateKeys[keyPair.publicKey] ? (
-                                <FiEyeOff className="h-4 w-4" />
-                              ) : (
-                                <FiEye className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                          {showPrivateKeys[keyPair.publicKey] && (
-                            <div className="space-y-2">
-                              <p className="text-xs text-danger">
-                                Warning: Keep your private key secure and do not
-                                share it.
-                              </p>
-                              <button
-                                onClick={() =>
-                                  copyToClipboard(keyPair.privateKey, "private")
-                                }
-                                className="w-full py-2 px-3 rounded border border-danger text-danger text-sm hover:bg-danger/10"
-                              >
-                                {copiedKey === `private-${keyPair.privateKey}`
-                                  ? "Copied!"
-                                  : "Copy Private Key"}
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                {activeTab === "keypairs" ? (
+                  <>
+                    <button
+                      onClick={handleGenerateKeypair}
+                      className="w-full py-3 px-4 rounded bg-accent text-bg-primary font-medium hover:bg-accent/90 transition-colors flex items-center justify-center shadow-md max-w-fit ml-3"
+                    >
+                      <FiKey className="mr-2 h-5 w-5" />
+                      Generate New Keypair
+                    </button>
+                    {error && (
+                      <div className="mt-4 p-3 bg-danger/10 border border-danger rounded text-danger text-sm">
+                        {error}
                       </div>
-                    </div>
-                  </section>
-                )}
+                    )}
 
-                <section className="bg-bg-secondary rounded-lg p-6 shadow-lg">
-                  <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent pb-2">
-                    All Keypairs
-                  </h2>
-                  <div className="space-y-4">
+                    {keyPair && (
+                      <section className="bg-bg-secondary rounded-lg p-6 shadow-lg">
+                        <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent pb-2">
+                          Generated Keypair
+                        </h2>
+                        <KeyPair
+                          publicKey={keyPair.publicKey}
+                          privateKey={keyPair.privateKey}
+                          showPrivateKey={
+                            showPrivateKeys[keyPair.publicKey] || false
+                          }
+                          copiedKey={copiedKey}
+                          onTogglePrivateKey={togglePrivateKeyVisibility}
+                          onCopyToClipboard={copyToClipboard}
+                          isNewlyGenerated={true}
+                        />
+                      </section>
+                    )}
+
                     {allKeyPairs.map((key, index) => (
-                      <div
+                      <KeyPair
                         key={index}
-                        className="p-4 bg-bg-primary rounded-lg border border-text-secondary/10"
-                      >
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-2">
-                              Public Key
-                            </label>
-                            <div className="flex items-center">
-                              <code className="text-xs text-text-primary flex-1 font-mono truncate">
-                                {key.publicKey}
-                              </code>
-                              <button
-                                onClick={() =>
-                                  copyToClipboard(key.publicKey, "public")
-                                }
-                                className="ml-2 p-2 rounded hover:bg-accent/10 text-accent"
-                              >
-                                {copiedKey === `public-${key.publicKey}`
-                                  ? "Copied!"
-                                  : "Copy"}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-2">
-                              Private Key
-                            </label>
-                            <div className="space-y-2">
-                              <div className="flex items-center">
-                                <code
-                                  className={`text-xs flex-1 font-mono truncate ${
-                                    showPrivateKeys[key.publicKey]
-                                      ? "text-danger"
-                                      : "text-text-primary"
-                                  }`}
-                                >
-                                  {showPrivateKeys[key.publicKey]
-                                    ? key.privateKey
-                                    : "••••••••••••••••"}
-                                </code>
-                                <button
-                                  onClick={() =>
-                                    togglePrivateKeyVisibility(key.publicKey)
-                                  }
-                                  className="ml-2 p-2 rounded hover:bg-accent/10 text-accent"
-                                >
-                                  {showPrivateKeys[key.publicKey] ? (
-                                    <FiEyeOff className="h-4 w-4" />
-                                  ) : (
-                                    <FiEye className="h-4 w-4" />
-                                  )}
-                                </button>
-                              </div>
-                              {showPrivateKeys[key.publicKey] && (
-                                <div className="space-y-2">
-                                  <p className="text-xs text-danger">
-                                    Warning: Keep your private key secure and do not
-                                    share it.
-                                  </p>
-                                  <button
-                                    onClick={() =>
-                                      copyToClipboard(key.privateKey, "private")
-                                    }
-                                    className="w-full py-2 px-3 rounded border border-danger text-danger text-sm hover:bg-danger/10"
-                                  >
-                                    {copiedKey === `private-${key.privateKey}`
-                                      ? "Copied!"
-                                      : "Copy Private Key"}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center pt-2 border-t border-text-secondary/10">
-                            <span className="text-sm text-text-secondary">
-                              Status:{" "}
-                              <span className="text-text-primary">
-                                {key.status}
-                              </span>
-                            </span>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleDiscardKeyPair(key.publicKey)}
-                                className="p-2 rounded hover:bg-warning/10 text-warning"
-                                title="Discard Keypair"
-                              >
-                                <FiEyeOff className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteKeyPair(key.publicKey)}
-                                className="p-2 rounded hover:bg-danger/10 text-danger"
-                                title="Delete Keypair"
-                              >
-                                <FiTrash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        publicKey={key.publicKey}
+                        privateKey={key.privateKey}
+                        status={key.status}
+                        showPrivateKey={showPrivateKeys[key.publicKey] || false}
+                        copiedKey={copiedKey}
+                        onTogglePrivateKey={togglePrivateKeyVisibility}
+                        onCopyToClipboard={copyToClipboard}
+                        onDiscard={handleDiscardKeyPair}
+                        onDelete={handleDeleteKeyPair}
+                      />
                     ))}
-                  </div>
-                </section>
+                  </>
+                ) : (
+                  <SignMessage
+                    keyPairs={allKeyPairs}
+                    onSignMessage={handleSignMessage}
+                  />
+                )}
               </>
             )}
           </div>
