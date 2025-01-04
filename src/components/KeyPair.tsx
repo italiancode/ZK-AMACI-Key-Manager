@@ -27,26 +27,23 @@ const KeyPair: React.FC<KeyPairProps> = ({
   isNewlyGenerated,
 }) => {
   return (
-    
-    <div
-      className={`${
-        isNewlyGenerated
-          ? ""
-          : "p-4 bg-bg-primary rounded-lg border border-accent"
-      }`}
-    >
+    <div className={`mt-6 ${
+      isNewlyGenerated 
+        ? "border-2 border-accent/50 bg-accent/5" 
+        : "border border-text-secondary/10"
+      } rounded-xl p-6 space-y-6 transition-all duration-200 hover:shadow-lg`}>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
+          <label className="text-sm font-semibold text-accent mb-2 block">
             Public Key
           </label>
-          <div className="flex items-center bg-bg-primary rounded p-2">
-            <code className="text-xs text-text-primary flex-1 font-mono truncate">
+          <div className="flex items-center bg-bg-primary/50 rounded-lg p-3">
+            <code className="text-sm text-text-primary flex-1 font-mono break-all overflow-x-auto whitespace-pre-wrap max-w-full">
               {publicKey}
             </code>
             <button
               onClick={() => onCopyToClipboard(publicKey, "public")}
-              className="ml-2 p-2 rounded hover:bg-accent/10 text-accent"
+              className="ml-3 px-3 py-1.5 rounded-md bg-accent/10 text-accent text-sm hover:bg-accent/20 transition-colors"
             >
               {copiedKey === `public-${publicKey}` ? "Copied!" : "Copy"}
             </button>

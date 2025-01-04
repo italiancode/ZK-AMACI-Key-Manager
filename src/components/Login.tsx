@@ -1,77 +1,78 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { FcGoogle } from 'react-icons/fc';
-import { FaGithub } from 'react-icons/fa';
-import { isExtension } from '../utils/environment';
-import { handleExternalAuth } from '../utils/auth';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { isExtension } from "../utils/environment";
+import { handleExternalAuth } from "../utils/auth";
+import { FcGoogle } from "react-icons/fc";
+import { FiGithub } from "react-icons/fi";
 
 const Login: React.FC = () => {
-  const [error, setError] = useState('');
-  const { signInWithGoogle, signInWithGithub } = useAuth();
+  const [error, setError] = useState("");
+  const { signInWithGoogle } = useAuth();
 
-  const handleGoogleSignIn = async () => {
+  const handleAuth = async () => {
     try {
-      setError('');
+      setError("");
       if (isExtension()) {
-        // Handle extension flow with external window
         const token = await handleExternalAuth();
-        // Use the token to authenticate
         await signInWithGoogle(token as string);
       } else {
-        // Regular web app flow
         await signInWithGoogle();
       }
     } catch (err) {
       console.error(err);
-      setError('Failed to sign in with Google');
-    }
-  };
-
-  const handleGithubSignIn = async () => {
-    try {
-      setError('');
-      await signInWithGithub();
-    } catch (err) {
-      console.error(err);
-      setError('Failed to sign in with GitHub');
+      setError("Failed to sign in");
     }
   };
 
   return (
-    <div className="bg-bg-secondary rounded-lg p-6 shadow-lg max-w-md mx-auto mt-10">
-      <h2 className="text-xl font-semibold mb-6 text-accent border-b border-accent pb-2">
-        Sign In to ZK-AMACI
-      </h2>
-      
-      {error && (
-        <div className="mb-4 p-3 bg-danger/10 border border-danger rounded text-danger text-sm">
-          {error}
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-bg-primary to-bg-secondary">
+      <div className="w-full max-w-md p-8 space-y-8 bg-bg-secondary/95 backdrop-blur-sm rounded-xl shadow-2xl m-4">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold text-accent">
+            Sign in to ZK-AMACI
+          </h1>
+          <p className="text-text-secondary text-sm">
+            Secure key management for your privacy
+          </p>
         </div>
-      )}
 
-      <div className="space-y-4">
-        <button
-          onClick={handleGoogleSignIn}
-          className="w-full py-3 px-4 rounded bg-white text-gray-800 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center shadow-md"
-        >
-          <FcGoogle className="w-5 h-5 mr-3" />
-          Continue with Google
-        </button>
+        {error && (
+          <div className="p-4 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
+            {error}
+          </div>
+        )}
 
-        <button
-          onClick={handleGithubSignIn}
-          className="w-full py-3 px-4 rounded bg-[#24292F] text-white font-medium hover:bg-[#24292F]/90 transition-colors flex items-center justify-center shadow-md"
-        >
-          <FaGithub className="w-5 h-5 mr-3" />
-          Continue with GitHub
-        </button>
+        <div className="space-y-4">
+          {isExtension() ? (
+            <button
+              onClick={handleAuth}
+              className="w-full py-4 px-6 rounded-lg bg-accent text-bg-primary font-semibold hover:bg-accent/90 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+            >
+              Sign In
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={handleAuth}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white text-gray-800 rounded-lg hover:bg-gray-50 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg font-semibold"
+              >
+                <FcGoogle className="w-6 h-6" />
+                Continue with Google
+              </button>
 
-        <p className="text-xs text-text-secondary text-center mt-6">
-          By signing in, you agree to our Terms of Service and Privacy Policy
-        </p>
+              <button
+                onClick={handleAuth}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#24292F] text-white rounded-lg hover:bg-[#24292F]/90 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg font-semibold"
+              >
+                <FiGithub className="w-6 h-6" />
+                Continue with GitHub
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-export default Login; 
+export default Login;

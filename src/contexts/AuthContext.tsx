@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { auth, db } from "../config/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import PasswordManager from "../services/passwordManager";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -36,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const passwordManager = new PasswordManager();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -107,16 +109,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = () => signOut(auth);
 
-  const storeEncryptedPassword = async (encryptedPassword: string) => {
+  const storeEncryptedPassword = async (password: string) => {
     if (!currentUser) throw new Error("No user logged in");
-    await setDoc(
-      doc(db, "users", currentUser.uid),
-      {
-        encryptedPassword,
-        updatedAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
+    try {
+      await passwordManager.setPassword(password);
+    } catch (error) {
+      console.error("Error storing encrypted password:", error);
+      throw error;
+    }
   };
 
   const getEncryptedPassword = async () => {

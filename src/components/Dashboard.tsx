@@ -325,7 +325,7 @@ const Dashboard: React.FC = () => {
                       </section>
                     )}
 
-                    <section className="bg-bg-secondary rounded-lg p-6 shadow-lg">
+                    <section className="bg-bg-primary rounded-lg p-6 shadow-lg">
                       <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent pb-2">
                         All Keypairs
                       </h2>

@@ -4,7 +4,7 @@ import { getAuthToken } from "../services/firebase";
 export const handleExternalAuth = async () => {
   if (chrome.runtime && chrome.runtime.id) {
     // We're in the extension - open external auth page
-    const authUrl = "http://localhost:5173/auth";
+    const authUrl = "https://zk-amaci.pages.dev/auth";
     const authWindow = await chrome.windows.create({
       url: authUrl,
       type: "popup",
