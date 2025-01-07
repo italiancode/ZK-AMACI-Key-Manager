@@ -21,6 +21,7 @@ interface AuthContextType {
   storeEncryptedPassword: (encryptedPassword: string) => Promise<void>;
   getEncryptedPassword: () => Promise<string | null>;
   isLoggingOut: boolean;
+  isLoggingIn: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -38,8 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const passwordManager = new PasswordManager();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const passwordManager = new PasswordManager();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -50,67 +53,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return unsubscribe;
   }, []);
 
+  const updateUserInFirestore = async (user: User) => {
+    await setDoc(
+      doc(db, "users", user.uid),
+      {
+        email: user.email,
+        name: user.displayName,
+        photoURL: user.photoURL,
+        lastLogin: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+  };
+
   const signInWithGoogle = async (token?: any): Promise<void> => {
-    if (token && typeof token === "object") {
-      try {
-        console.log("Token data:", token);
-        const credential = GoogleAuthProvider.credential(
-          null,
-          token._tokenResponse.oauthAccessToken
-        ) as AuthCredential;
+    setIsLoggingIn(true);
+    setAuthError(null);
+    try {
+      const result = token
+        ? await signInWithCredential(
+            auth,
+            GoogleAuthProvider.credential(
+              null,
+              token._tokenResponse.oauthAccessToken
+            ) as AuthCredential
+          )
+        : await signInWithPopup(auth, new GoogleAuthProvider());
 
-        console.log(credential);
-        const result = await signInWithCredential(auth, credential);
-
-        await setDoc(
-          doc(db, "users", result.user.uid),
-          {
-            email: result.user.email,
-            name: result.user.displayName,
-            photoURL: result.user.photoURL,
-            lastLogin: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-      } catch (error) {
-        console.error("Auth error:", error);
-        throw error;
-      }
-    } else {
-      try {
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-
-        await setDoc(
-          doc(db, "users", result.user.uid),
-          {
-            email: result.user.email,
-            name: result.user.displayName,
-            photoURL: result.user.photoURL,
-            lastLogin: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-      } catch (error) {
-        console.error("Web auth error:", error);
-        throw error;
-      }
+      await updateUserInFirestore(result.user);
+    } catch (error) {
+      console.error("Auth error:", error);
+      setAuthError("Sign in was unavailable. Please try again later.");
+      throw error;
+    } finally {
+      setIsLoggingIn(false);
+      setAuthError(null);
     }
   };
 
   const signInWithGithub = async () => {
-    const provider = new GithubAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    await setDoc(
-      doc(db, "users", result.user.uid),
-      {
-        email: result.user.email,
-        name: result.user.displayName,
-        photoURL: result.user.photoURL,
-        createdAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
+    setIsLoggingIn(true);
+    setAuthError(null);
+    try {
+      const result = await signInWithPopup(auth, new GithubAuthProvider());
+      await updateUserInFirestore(result.user);
+    } catch (error) {
+      console.error("GitHub sign-in error:", error);
+      setAuthError("GitHub sign-in failed. Please try again later.");
+      throw error;
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const logout = async () => {
@@ -118,13 +111,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await passwordManager.clearAllData();
       await signOut(auth);
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setIsLoggingOut(false);
     } catch (error) {
       console.error("Logout error:", error);
-      setIsLoggingOut(false);
       throw error;
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -153,20 +144,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     storeEncryptedPassword,
     getEncryptedPassword,
     isLoggingOut,
+    isLoggingIn,
   };
 
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
-      {isLoggingOut && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-bg-primary p-6 rounded-xl shadow-xl max-w-md w-full mx-4 border border-text-secondary/10">
+      {(isLoggingIn || isLoggingOut) && (
+        <div className="fixed inset-0 bg-bg-primary/50 backdrop-blur-sm flex items-center justify-center z-[100]">
+          <div className="bg-bg-secondary p-6 rounded-xl shadow-xl max-w-md w-full mx-4 border border-text-secondary/10">
             <h3 className="text-xl font-semibold text-accent mb-2">
-              Logging out...
+              {isLoggingIn ? "Signing in..." : "Logging out..."}
             </h3>
-            <p className="text-text-primary">
-              Clearing all stored data and signing out. Please wait...
-            </p>
+            {authError ? (
+              <p className="text-text-danger">
+                {authError}
+              </p>
+            ) : (
+              <p className="text-text-primary">
+                {isLoggingIn 
+                  ? "Sign in in progress. Please wait..."
+                  : "Clearing all stored data and signing out. Please wait..."
+                }
+              </p>
+            )}
           </div>
         </div>
       )}

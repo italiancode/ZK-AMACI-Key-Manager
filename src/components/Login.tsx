@@ -7,7 +7,7 @@ import { FiGithub } from "react-icons/fi";
 
 const Login: React.FC = () => {
   const [error, setError] = useState("");
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, isLoggingIn } = useAuth();
 
   const handleAuth = async () => {
     try {
@@ -46,26 +46,29 @@ const Login: React.FC = () => {
           {isExtension() ? (
             <button
               onClick={handleAuth}
-              className="w-full py-4 px-6 rounded-lg bg-accent text-bg-primary font-semibold hover:bg-accent/90 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+              disabled={isLoggingIn}
+              className="w-full py-4 px-6 rounded-lg bg-accent text-bg-primary font-semibold hover:bg-accent/90 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {isLoggingIn ? "Signing in..." : "Sign In"}
             </button>
           ) : (
             <>
               <button
                 onClick={handleAuth}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white text-gray-800 rounded-lg hover:bg-gray-50 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg font-semibold"
+                disabled={isLoggingIn}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white text-gray-800 rounded-lg hover:bg-gray-50 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FcGoogle className="w-6 h-6" />
-                Continue with Google
+                {isLoggingIn ? "Signing in..." : "Continue with Google"}
               </button>
 
               <button
                 onClick={handleAuth}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#24292F] text-white rounded-lg hover:bg-[#24292F]/90 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg font-semibold"
+                disabled={isLoggingIn}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#24292F] text-white rounded-lg hover:bg-[#24292F]/90 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FiGithub className="w-6 h-6" />
-                Continue with GitHub
+                {isLoggingIn ? "Signing in..." : "Continue with GitHub"}
               </button>
             </>
           )}
