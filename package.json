@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.js",
-    "git-commit-push": "git add . && git commit -m \"Something just got updated!\" && git push origin main"
+    "git-commit-push": "git diff-index --quiet HEAD || (git add . && git commit -m \"Something just got updated!\" && git push origin main)"
   },
   "dependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.18",
