@@ -64,9 +64,16 @@ const Dashboard: React.FC = () => {
     }
 
     const initializeKeyManager = async () => {
+      setIsLoading(true);
       try {
         const manager = new AMACIKeyManager();
         setKeyManager(manager);
+
+        const storedPassword = await getEncryptedPassword();
+        if (storedPassword) {
+          await manager.initializePassword(storedPassword);
+          setIsPasswordSet(true);
+        }
 
         const existingPassword = await manager.getPassword();
         setIsPasswordSet(!!existingPassword);
@@ -249,7 +256,14 @@ const Dashboard: React.FC = () => {
   );
 
   if (isLoading) {
-    return <Loading />;
+    return (
+      <div className="h-full">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 sm:py-6 lg:px-8 py-8">
+          <Loading />
+        </div>
+      </div>
+    );
   }
 
   if (!currentUser) {

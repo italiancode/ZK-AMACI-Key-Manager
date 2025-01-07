@@ -20,6 +20,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   storeEncryptedPassword: (encryptedPassword: string) => Promise<void>;
   getEncryptedPassword: () => Promise<string | null>;
+  isLoggingOut: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -38,6 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const passwordManager = new PasswordManager();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -78,13 +80,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
-        
-        await setDoc(doc(db, "users", result.user.uid), {
-          email: result.user.email,
-          name: result.user.displayName,
-          photoURL: result.user.photoURL,
-          lastLogin: new Date().toISOString(),
-        }, { merge: true });
+
+        await setDoc(
+          doc(db, "users", result.user.uid),
+          {
+            email: result.user.email,
+            name: result.user.displayName,
+            photoURL: result.user.photoURL,
+            lastLogin: new Date().toISOString(),
+          },
+          { merge: true }
+        );
       } catch (error) {
         console.error("Web auth error:", error);
         throw error;
@@ -107,7 +113,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const logout = () => signOut(auth);
+  const logout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await passwordManager.clearAllData();
+      await signOut(auth);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setIsLoggingOut(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+      setIsLoggingOut(false);
+      throw error;
+    }
+  };
 
   const storeEncryptedPassword = async (password: string) => {
     if (!currentUser) throw new Error("No user logged in");
@@ -133,11 +152,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     logout,
     storeEncryptedPassword,
     getEncryptedPassword,
+    isLoggingOut,
   };
 
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
+      {isLoggingOut && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+          <div className="bg-bg-primary p-6 rounded-xl shadow-xl max-w-md w-full mx-4 border border-text-secondary/10">
+            <h3 className="text-xl font-semibold text-accent mb-2">
+              Logging out...
+            </h3>
+            <p className="text-text-primary">
+              Clearing all stored data and signing out. Please wait...
+            </p>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };

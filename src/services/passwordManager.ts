@@ -3,7 +3,7 @@ import {
   encode as encodeBase64,
   decode as decodeBase64,
 } from "base64-arraybuffer";
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 
 class PasswordManager {
@@ -28,7 +28,9 @@ class PasswordManager {
       nacl.secretbox.keyLength,
       nacl.secretbox.keyLength + nacl.secretbox.nonceLength
     );
-    const encryptedBytes = data.slice(nacl.secretbox.keyLength + nacl.secretbox.nonceLength);
+    const encryptedBytes = data.slice(
+      nacl.secretbox.keyLength + nacl.secretbox.nonceLength
+    );
     const decryptedBytes = nacl.secretbox.open(encryptedBytes, nonce, key);
     if (!decryptedBytes) throw new Error("Failed to decrypt password");
     return new TextDecoder().decode(decryptedBytes);
@@ -41,11 +43,11 @@ class PasswordManager {
 
       const encryptedPassword = this.encryptPassword(password);
       const docRef = doc(db, `users/${user.uid}/passwords/master`);
-      await setDoc(docRef, { 
+      await setDoc(docRef, {
         encryptedPassword,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
-      
+
       this.encryptionPassword = password;
     } catch (error) {
       console.error("Error setting password:", error);
@@ -60,9 +62,9 @@ class PasswordManager {
 
       const docRef = doc(db, `users/${user.uid}/passwords/master`);
       const docSnap = await getDoc(docRef);
-      
+
       if (!docSnap.exists()) return null;
-      
+
       const { encryptedPassword } = docSnap.data();
       if (!encryptedPassword) return null;
 
@@ -76,6 +78,32 @@ class PasswordManager {
   getCurrentPassword(): string | null {
     return this.encryptionPassword;
   }
+
+  async clearAllData(): Promise<void> {
+    try {
+      // Clear localStorage
+      localStorage.clear();
+      
+      // Clear IndexedDB
+      const dbName = "amaci-keys"; // Same name used in keyManager.ts
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.deleteDatabase(dbName);
+        
+        request.onsuccess = () => {
+          console.log("Database deleted successfully");
+          resolve();
+        };
+        
+        request.onerror = () => {
+          console.error("Error deleting database");
+          reject();
+        };
+      });
+    } catch (error) {
+      console.error("Error clearing data:", error);
+      throw error;
+    }
+  }
 }
 
-export default PasswordManager; 
+export default PasswordManager;

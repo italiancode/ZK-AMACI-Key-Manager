@@ -1,10 +1,19 @@
-import React, {  } from "react";
+import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { FiLogOut, } from "react-icons/fi";
+import { FiLogOut } from "react-icons/fi";
 import appIcon from "../assets/icon.png";
+import LogoutModal from "./LogoutModal";
+
 
 const Header: React.FC = () => {
   const { currentUser, logout } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogout = async () => {
+    // Close the dialog and perform logout
+    setShowLogoutConfirm(false);
+    await logout();
+  };
 
   return (
     <header className="bg-bg-secondary/95 backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b border-text-secondary/10">
@@ -49,12 +58,20 @@ const Header: React.FC = () => {
 
               {/* Logout Button */}
               <button
-                onClick={logout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="h-9 w-9 flex items-center justify-center rounded-lg text-danger/80 hover:text-danger hover:bg-danger/10 transition-all"
                 title="Logout"
               >
                 <FiLogOut className="w-4 h-4" />
               </button>
+
+              {/* Logout Confirmation Modal */}
+              {showLogoutConfirm && (
+                <LogoutModal 
+                  onClose={() => setShowLogoutConfirm(false)}
+                  onConfirm={handleLogout}
+                />
+              )}
             </div>
           )}
         </div>
