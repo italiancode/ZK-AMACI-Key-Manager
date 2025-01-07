@@ -1,0 +1,4 @@
+[title] {
+  max-width: var(--tooltip-max-width);
+  white-space: pre-wrap;
+} 

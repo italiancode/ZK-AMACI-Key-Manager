@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AMACIKeyManager from "../services/keyManager";
-import { FiKey } from "react-icons/fi";
+import { FiKey, FiSearch, FiX, FiInbox } from "react-icons/fi";
 
 import { ApprovalRequest } from "./ApprovalRequest";
 import SetPassword from "./SetPassword";
@@ -29,10 +29,16 @@ const Dashboard: React.FC = () => {
   const [keyPair, setKeyPair] = useState<{
     publicKey: string;
     privateKey: string;
+    name?: string;
+    createdAt?: string;
   } | null>(null);
-  const [allKeyPairs, setAllKeyPairs] = useState<
-    { publicKey: string; privateKey: string; status: string }[]
-  >([]);
+  const [allKeyPairs, setAllKeyPairs] = useState<{
+    publicKey: string;
+    privateKey: string;
+    status: string;
+    name?: string;
+    createdAt?: string;
+  }[]>([]);
   const [password, setPassword] = useState<string>("");
   const [isPasswordSet, setIsPasswordSet] = useState<boolean>(false);
   const [keyManager, setKeyManager] = useState<AMACIKeyManager | null>(null);
@@ -46,6 +52,7 @@ const Dashboard: React.FC = () => {
     useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"keypairs" | "sign">("keypairs");
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!currentUser) {
@@ -227,6 +234,20 @@ const Dashboard: React.FC = () => {
     return await keyManager.signMessage(publicKey, message, metadata);
   };
 
+  const handleUpdateKeyName = async (publicKey: string, name: string) => {
+    try {
+      await keyManager?.updateKeyPairName(publicKey, name);
+      await fetchKeyPairs();
+    } catch (error) {
+      console.error("Error updating key name:", error);
+    }
+  };
+
+  const filteredKeyPairs = allKeyPairs.filter(key => 
+    key.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    key.publicKey.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (isLoading) {
     return <Loading />;
   }
@@ -268,7 +289,7 @@ const Dashboard: React.FC = () => {
               />
             ) : (
               <>
-                <div className="flex border-b border-text-secondary/10 space-x-2 mb-6">
+                <div className="flex border-b border-text-secondary/30 space-x-2 mb-6">
                   <button
                     className={`px-4 py-2 ${
                       activeTab === "keypairs"
@@ -308,44 +329,96 @@ const Dashboard: React.FC = () => {
 
                     {keyPair && (
                       <section className="bg-bg-secondary rounded-lg p-6 shadow-lg">
-                        <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent pb-2">
+                        <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent/70 pb-2">
                           Generated Keypair
                         </h2>
                         <KeyPair
                           publicKey={keyPair.publicKey}
                           privateKey={keyPair.privateKey}
+                          name={keyPair.name}
+                          createdAt={keyPair.createdAt}
                           showPrivateKey={
                             showPrivateKeys[keyPair.publicKey] || false
                           }
                           copiedKey={copiedKey}
                           onTogglePrivateKey={togglePrivateKeyVisibility}
                           onCopyToClipboard={copyToClipboard}
+                          onUpdateName={handleUpdateKeyName}
                           isNewlyGenerated={true}
                         />
                       </section>
                     )}
 
-                    <section className="bg-bg-primary rounded-lg p-6 shadow-lg">
-                      <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent pb-2">
-                        All Keypairs
-                      </h2>
+                    <section className="bg-bg-primary rounded-lg py-6 shadow-lg">
+                      <div className="max-w-3xl mx-auto">
+                        <h2 className="text-xl font-semibold mb-4 text-accent border-b border-accent/70 pb-2">
+                          All Keypairs
+                        </h2>
+                        
+                        <div className="relative mb-6">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <FiSearch className="h-5 w-5 text-text-secondary/50" />
+                          </div>
+                          <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search by key name or public key..."
+                            className="w-full pl-10 pr-4 py-3 rounded-lg bg-bg-primary/80 border border-text-secondary/10 
+                              text-text-primary placeholder-text-secondary/50 
+                              focus:ring-2 focus:ring-accent focus:border-transparent 
+                              transition-all duration-200"
+                          />
+                          {searchTerm && (
+                            <button
+                              onClick={() => setSearchTerm('')}
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary/50 hover:text-accent"
+                            >
+                              <FiX className="h-5 w-5" />
+                            </button>
+                          )}
+                        </div>
 
-                      {allKeyPairs.map((key, index) => (
-                        <KeyPair
-                          key={index}
-                          publicKey={key.publicKey}
-                          privateKey={key.privateKey}
-                          status={key.status}
-                          showPrivateKey={
-                            showPrivateKeys[key.publicKey] || false
-                          }
-                          copiedKey={copiedKey}
-                          onTogglePrivateKey={togglePrivateKeyVisibility}
-                          onCopyToClipboard={copyToClipboard}
-                          onDiscard={handleDiscardKeyPair}
-                          onDelete={handleDeleteKeyPair}
-                        />
-                      ))}
+                        {filteredKeyPairs.length === 0 ? (
+                          <div className="text-center py-8 text-text-secondary">
+                            <FiInbox className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                            <p className="text-lg font-medium">No keypairs found</p>
+                            <p className="text-sm">
+                              {searchTerm ? 
+                                "Try adjusting your search terms" : 
+                                "Generate a new keypair to get started"
+                              }
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {filteredKeyPairs.length > 0 && searchTerm && (
+                              <p className="text-sm text-text-secondary mb-4">
+                                Found {filteredKeyPairs.length} matching keypair{filteredKeyPairs.length !== 1 ? 's' : ''}
+                              </p>
+                            )}
+                            {filteredKeyPairs.map((key, index) => (
+                              <KeyPair
+                                key={index}
+                                publicKey={key.publicKey}
+                                privateKey={key.privateKey}
+                                status={key.status}
+                                name={key.name}
+                                showPrivateKey={
+                                  showPrivateKeys[key.publicKey] || false
+                                }
+                                copiedKey={copiedKey}
+                                onTogglePrivateKey={togglePrivateKeyVisibility}
+                                onCopyToClipboard={copyToClipboard}
+                                onDiscard={handleDiscardKeyPair}
+                                onDelete={handleDeleteKeyPair}
+                                onUpdateName={handleUpdateKeyName}
+                                createdAt={key.createdAt}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </section>
                   </>
                 ) : (

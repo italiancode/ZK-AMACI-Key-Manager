@@ -9,7 +9,9 @@ import PasswordManager from './passwordManager';
 interface KeyPair {
   publicKey: string;
   privateKey: string;
-  status: "active" | "discarded";
+  status: string;
+  name?: string;
+  createdAt?: string;
 }
 
 interface SigningMetadata {
@@ -127,6 +129,17 @@ class AMACIKeyManager {
     return await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
   }
 
+  private generateRandomName(): string {
+    const adjectives = ['Primary', 'Backup', 'Secure', 'Personal', 'Work', 'Test', 'Development', 'Production'];
+    const purposes = ['Identity', 'Signing', 'Authentication', 'Access', 'Wallet', 'Account'];
+    const randomNum = Math.floor(Math.random() * 1000);
+    
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const purpose = purposes[Math.floor(Math.random() * purposes.length)];
+    
+    return `${adjective} ${purpose} Key ${randomNum}`;
+  }
+
   async generateKeyPair(): Promise<KeyPair> {
     const password = this.passwordManager.getCurrentPassword() || await this.getPassword();
     if (!password) {
@@ -143,6 +156,8 @@ class AMACIKeyManager {
       publicKey: encodeBase64(keyPair.publicKey),
       privateKey: encryptedPrivateKey,
       status: "active",
+      name: this.generateRandomName(),
+      createdAt: new Date().toISOString()
     };
 
     await this.performDBTransaction("readwrite", async (store) => {
@@ -293,6 +308,18 @@ class AMACIKeyManager {
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
     return hashHex;
+  }
+
+  async updateKeyPairName(publicKey: string, name: string): Promise<void> {
+    const allKeys = await this.listKeyPairs();
+    const keyToUpdate = allKeys.find((key) => key.publicKey === publicKey);
+
+    if (keyToUpdate) {
+      keyToUpdate.name = name;
+      await this.performDBTransaction("readwrite", async (store) => {
+        store.put(keyToUpdate);
+      });
+    }
   }
 }
 

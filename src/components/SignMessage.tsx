@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 
 interface SignMessageProps {
-  keyPairs: { publicKey: string; status: string }[];
+  keyPairs: { publicKey: string; status: string; name?: string }[];
   onSignMessage: (publicKey: string, message: string, metadata: any) => Promise<any>;
 }
 
@@ -18,6 +18,8 @@ const SignMessage: React.FC<SignMessageProps> = ({ keyPairs, onSignMessage }) =>
   }, null, 2));
   const [signature, setSignature] = useState<any>(null);
   const [error, setError] = useState('');
+
+  const activeKeys = keyPairs.filter(k => k.status === 'active');
 
   const handleSign = async () => {
     try {
@@ -50,9 +52,9 @@ const SignMessage: React.FC<SignMessageProps> = ({ keyPairs, onSignMessage }) =>
               className="w-full p-3 rounded-lg bg-bg-primary border border-text-secondary/10 text-text-primary focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
             >
               <option value="">Select a key...</option>
-              {keyPairs.filter(k => k.status === 'active').map((key) => (
+              {activeKeys.map((key) => (
                 <option key={key.publicKey} value={key.publicKey}>
-                  {key.publicKey.substring(0, 16)}...
+                  {key.name || key.publicKey.substring(0, 16) + '...'}
                 </option>
               ))}
             </select>
