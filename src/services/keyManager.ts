@@ -1,3 +1,4 @@
+import { auth } from "../config/firebase";
 import nacl from "tweetnacl";
 import {
   encode as encodeBase64,
@@ -90,16 +91,33 @@ class AMACIKeyManager {
   private async performDBTransaction(
     mode: IDBTransactionMode,
     operation: (store: IDBObjectStore) => Promise<void>
-  ) {
+  ): Promise<void> {
     const db = await this.openDatabase();
-    const tx = db.transaction(this.keyStorageName, mode);
-    const store = tx.objectStore(this.keyStorageName);
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        const tx = db.transaction(this.keyStorageName, mode);
+        const store = tx.objectStore(this.keyStorageName);
 
-    await operation(store);
+        // Set up transaction event handlers first
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => {
+          db.close();
+          reject(tx.error);
+        };
+        tx.onabort = () => {
+          db.close();
+          reject(new Error('Transaction aborted'));
+        };
 
-    return new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = (event) => reject((event.target as IDBRequest).error);
+        // Perform the operation
+        await operation(store);
+      } catch (error) {
+        db.close();
+        reject(error);
+      }
     });
   }
 
@@ -107,6 +125,11 @@ class AMACIKeyManager {
     data: Uint8Array,
     password: string
   ): Promise<string> {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      throw new Error("User must be authenticated and have an email");
+    }
+
     const key = await this.deriveKey(password);
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const encrypted = await crypto.subtle.encrypt(
@@ -121,6 +144,11 @@ class AMACIKeyManager {
     encryptedData: string,
     password: string
   ): Promise<ArrayBuffer> {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      throw new Error("User must be authenticated and have an email");
+    }
+
     const key = await this.deriveKey(password);
     const encryptedBuffer = decodeBase64(encryptedData);
     const iv = encryptedBuffer.slice(0, 12);
@@ -141,16 +169,25 @@ class AMACIKeyManager {
   }
 
   async generateKeyPair(): Promise<KeyPair> {
+    console.log("Generating key pair");
     const password = this.passwordManager.getCurrentPassword() || await this.getPassword();
+
+    // console.log("Password:", password);
     if (!password) {
       throw new Error("Password not set. Please set a password first.");
     }
 
     const keyPair = nacl.sign.keyPair();
+
+    // console.log("Key pair:", keyPair);
+
+    console.log("Encrypting private key");
     const encryptedPrivateKey = await this.encryptData(
       keyPair.secretKey,
       password
     );
+
+    // console.log("Encrypted private key:", encryptedPrivateKey);
 
     const newKeyPair: KeyPair = {
       publicKey: encodeBase64(keyPair.publicKey),
@@ -160,18 +197,30 @@ class AMACIKeyManager {
       createdAt: new Date().toISOString()
     };
 
+    // console.log("New key pair:", newKeyPair);
+
     await this.performDBTransaction("readwrite", async (store) => {
       store.add(newKeyPair);
     });
+
+    // console.log("Key pair added to database");
 
     return newKeyPair;
   }
 
   private async deriveKey(password: string): Promise<CryptoKey> {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      throw new Error("User must be authenticated and have an email");
+    }
+
     const enc = new TextEncoder();
+    // Combine password with email for stronger key derivation
+    const combinedSecret = `${password}:${user.email}`;
+    
     const keyMaterial = await crypto.subtle.importKey(
       "raw",
-      enc.encode(password),
+      enc.encode(combinedSecret),
       { name: "PBKDF2" },
       false,
       ["deriveKey"]

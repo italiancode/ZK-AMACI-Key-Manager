@@ -83,22 +83,6 @@ class PasswordManager {
     try {
       // Clear localStorage
       localStorage.clear();
-      
-      // Clear IndexedDB
-      const dbName = "amaci-keys"; // Same name used in keyManager.ts
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.deleteDatabase(dbName);
-        
-        request.onsuccess = () => {
-          console.log("Database deleted successfully");
-          resolve();
-        };
-        
-        request.onerror = () => {
-          console.error("Error deleting database");
-          reject();
-        };
-      });
     } catch (error) {
       console.error("Error clearing data:", error);
       throw error;

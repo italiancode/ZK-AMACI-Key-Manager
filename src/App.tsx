@@ -8,7 +8,11 @@ import { isExtension } from "./utils/environment";
 const App: React.FC = () => {
   // For web app, use routing
   return (
-    <div className={`app-container mx-auto w-[400px] ${isExtension() ? 'h-[600px]' : 'min-h-screen'}`}>
+    <div
+      className={`app-container mx-auto ${
+        isExtension() ? "h-[600px] w-[400px]" : "w-full min-h-screen"
+      }`}
+    >
       <AuthProvider>
         <main className="h-full">
           <AppIndex />

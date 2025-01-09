@@ -109,15 +109,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = async () => {
     setIsLoggingOut(true);
     try {
-      await passwordManager.clearAllData();
+      localStorage.setItem('logout_in_progress', 'true');
+      
       await signOut(auth);
+      
+      await passwordManager.clearAllData();
+      
+      localStorage.removeItem('logout_in_progress');
+      
+      const isExtension = !!(typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id);
+      if (isExtension) {
+        window.close();
+      } else {
+        window.location.reload();
+      }
     } catch (error) {
       console.error("Logout error:", error);
+      localStorage.removeItem('logout_in_progress');
       throw error;
     } finally {
       setIsLoggingOut(false);
     }
   };
+
+  useEffect(() => {
+    const checkIncompleteLogout = async () => {
+      if (localStorage.getItem('logout_in_progress')) {
+        await passwordManager.clearAllData();
+        localStorage.removeItem('logout_in_progress');
+        if (auth.currentUser) {
+          await signOut(auth);
+        }
+      }
+    };
+
+    checkIncompleteLogout();
+  }, []);
 
   const storeEncryptedPassword = async (password: string) => {
     if (!currentUser) throw new Error("No user logged in");
@@ -163,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             ) : (
               <p className="text-text-primary">
                 {isLoggingIn 
-                  ? "Sign in in progress. Please wait..."
+                  ? "Sign-in in progress. Please wait..."
                   : "Clearing all stored data and signing out. Please wait..."
                 }
               </p>
